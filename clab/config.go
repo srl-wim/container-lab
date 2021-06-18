@@ -22,7 +22,6 @@ import (
 )
 
 const (
-	baseConfigDir = "/etc/containerlab/templates/srl/"
 	// prefix is used to distinct containerlab created files/dirs/containers
 	prefix = "clab"
 	// a name of a docker network that nodes management interfaces connect to
