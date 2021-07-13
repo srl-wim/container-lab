@@ -119,12 +119,16 @@ var deployCmd = &cobra.Command{
 			linkWorkers = maxWorkers
 		}
 
-		// Serializing ignite workers due to busy device error
-		if _, ok := c.Runtimes[runtime.IgniteRuntime]; ok {
-			nodeWorkers = 1
+		// a set of workers that do not support concurrency
+		serialNodes := make(map[string]struct{})
+		for _, n := range c.Nodes {
+			if n.GetRuntime().GetName() == runtime.IgniteRuntime {
+				serialNodes[n.Config().LongName] = struct{}{}
+				nodeWorkers = nodeWorkers - 1
+			}
 		}
 
-		c.CreateNodes(ctx, nodeWorkers)
+		c.CreateNodes(ctx, nodeWorkers, serialNodes)
 		c.CreateLinks(ctx, linkWorkers, false)
 		log.Debug("containers created, retrieving state and IP addresses...")
 
@@ -142,16 +146,17 @@ var deployCmd = &cobra.Command{
 			return err
 		}
 
-		var wg sync.WaitGroup
+		wg := new(sync.WaitGroup)
 		wg.Add(len(c.Nodes))
+
 		for _, node := range c.Nodes {
-			go func(node nodes.Node) {
+			go func(node nodes.Node, wg *sync.WaitGroup) {
 				defer wg.Done()
 				err := node.PostDeploy(ctx, c.Nodes)
 				if err != nil {
 					log.Errorf("failed to run postdeploy task for node %s: %v", node.Config().ShortName, err)
 				}
-			}(node)
+			}(node, wg)
 		}
 		wg.Wait()
 

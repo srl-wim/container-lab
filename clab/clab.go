@@ -151,45 +151,67 @@ func (c *CLab) GlobalRuntime() runtime.ContainerRuntime {
 	return c.Runtimes[c.globalRuntime]
 }
 
-func (c *CLab) CreateNodes(ctx context.Context, workers uint) {
+func (c *CLab) CreateNodes(ctx context.Context, maxWorkers uint, serialNodes map[string]struct{}) {
+
 	wg := new(sync.WaitGroup)
-	wg.Add(int(workers))
-	nodesChan := make(chan nodes.Node)
-	// start workers
-	for i := uint(0); i < workers; i++ {
-		go func(i uint) {
-			defer wg.Done()
-			for {
-				select {
-				case node, ok := <-nodesChan:
-					if node == nil || !ok {
-						log.Debugf("Worker %d terminating...", i)
-						return
-					}
-					log.Debugf("Worker %d received node: %+v", i, node.Config())
-					// PreDeploy
-					err := node.PreDeploy(c.Config.Name, c.Dir.LabCA, c.Dir.LabCARoot)
-					if err != nil {
-						log.Errorf("failed pre-deploy phase for node %q: %v", node.Config().ShortName, err)
-						continue
-					}
-					// Deploy
-					err = node.Deploy(ctx)
-					if err != nil {
-						log.Errorf("failed deploy phase for node %q: %v", node.Config().ShortName, err)
-						continue
-					}
-				case <-ctx.Done():
+	if len(serialNodes) > 0 {
+		wg.Add(int(maxWorkers) + 1)
+	} else {
+		wg.Add(int(maxWorkers))
+	}
+
+	concurrentChan := make(chan nodes.Node)
+	serialChan := make(chan nodes.Node)
+
+	workerFunc := func(i uint, input chan nodes.Node, wg *sync.WaitGroup) {
+		defer wg.Done()
+		for {
+			select {
+			case node, ok := <-input:
+				if node == nil || !ok {
+					log.Debugf("Worker %d terminating...", i)
 					return
 				}
+				log.Debugf("Worker %d received node: %+v", i, node.Config())
+				// PreDeploy
+				err := node.PreDeploy(c.Config.Name, c.Dir.LabCA, c.Dir.LabCARoot)
+				if err != nil {
+					log.Errorf("failed pre-deploy phase for node %q: %v", node.Config().ShortName, err)
+					continue
+				}
+				// Deploy
+				err = node.Deploy(ctx)
+				if err != nil {
+					log.Errorf("failed deploy phase for node %q: %v", node.Config().ShortName, err)
+					continue
+				}
+			case <-ctx.Done():
+				return
 			}
-		}(i)
+		}
 	}
+
+	// start concurrent workers
+	for i := uint(0); i < maxWorkers; i++ {
+		go workerFunc(i, concurrentChan, wg)
+	}
+
+	// start the serial worker
+	go workerFunc(maxWorkers, serialChan, wg)
+
+	// send nodes to workers
 	for _, n := range c.Nodes {
-		nodesChan <- n
+		if _, ok := serialNodes[n.Config().LongName]; ok {
+			serialChan <- n
+			continue
+		}
+		concurrentChan <- n
 	}
+
 	// close channel to terminate the workers
-	close(nodesChan)
+	close(concurrentChan)
+	close(serialChan)
+
 	// wait for all workers to finish
 	wg.Wait()
 }

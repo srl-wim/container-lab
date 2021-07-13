@@ -15,14 +15,14 @@ topology:
       image: networkop/cx:4.3.0
 
     server01:
-      kind: cvx
+      kind: linux
       image: networkop/host:ignite
       kernel: networkop/ignite-kernel:5.4.108-amd64
       binds:
         - server01/interfaces:/etc/network/interfaces
 
     server02:
-      kind: cvx
+      kind: linux
       image: networkop/host:ignite
       kernel: networkop/ignite-kernel:5.4.108-amd64
       binds:
