@@ -670,8 +670,8 @@ github.com/juju/ansiterm v0.0.0-20180109212912-720a0952cc2a/go.mod h1:UJSiEoRfvx
 github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7VTCxuUUipMqKk8s4w=
 github.com/karrick/godirwalk v1.8.0/go.mod h1:H5KPZjojv4lE+QYImBI8xVtrBRgYrIVsaRPx4tDPEn4=
 github.com/karrick/godirwalk v1.10.3/go.mod h1:RoGL9dQei4vP9ilrpETWE8CLOZ1kiN0LhBygSwrAsHA=
-github.com/kellerza/template v0.0.4 h1:z/qhD9D50bEhbTu/1JN6ANiTECws8rKQBKmLDdwK6hs=
-github.com/kellerza/template v0.0.4/go.mod h1:Og3Jdssypk1J/bNpWIrmymW5FOWI88vsY5Qx/e57V7M=
+github.com/kellerza/template v0.0.5 h1:5mKC7ts/CfpzXiVsDoqlghUD52qqxHd1nA837SAap4M=
+github.com/kellerza/template v0.0.5/go.mod h1:Og3Jdssypk1J/bNpWIrmymW5FOWI88vsY5Qx/e57V7M=
 github.com/kevinburke/ssh_config v0.0.0-20190725054713-01f96b0aa0cd/go.mod h1:CT57kijsi8u/K/BOFA39wgDQJ9CxiF4nAY/ojJ6r6mM=
 github.com/kisielk/errcheck v1.1.0/go.mod h1:EZBBE59ingxPouuu3KfxchcWSUPOHkagtvWXihfKN4Q=
 github.com/kisielk/errcheck v1.2.0/go.mod h1:/BMXB+zMLi60iA8Vv6Ksmxu/1UDYcXs4uQLJ+jE2L00=

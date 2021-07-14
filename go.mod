@@ -17,7 +17,7 @@ require (
 	github.com/google/uuid v1.2.0
 	github.com/hashicorp/go-version v1.2.1
 	github.com/jsimonetti/rtnetlink v0.0.0-20210226120601-1b79e63a70a0
-	github.com/kellerza/template v0.0.4
+	github.com/kellerza/template v0.0.5
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/olekukonko/tablewriter v0.0.5-0.20201029120751-42e21c7531a3
 	github.com/opencontainers/runtime-spec v1.0.3-0.20210303205135-43e4633e40c1

@@ -33,7 +33,11 @@ type NodeConfig struct {
 // Load templates from all paths for the specific role/kind
 func LoadTemplates(tmpl *template.Template, role string) error {
 	for i := range TemplatePaths {
-		fn := filepath.Join(TemplatePaths[i], fmt.Sprintf("*__%s.tmpl", role))
+		p := TemplatePaths[i]
+		if p == "@" {
+			p = "/etc/containerlab/templates/"
+		}
+		fn := filepath.Join(p, fmt.Sprintf("*__%s.tmpl", role))
 		_, err := tmpl.ParseGlob(fn)
 		if err != nil {
 			return fmt.Errorf("could not load templates from %s: %s", fn, err)
@@ -43,10 +47,11 @@ func LoadTemplates(tmpl *template.Template, role string) error {
 }
 
 func RenderAll(nodes map[string]nodes.Node, links map[int]*types.Link) (map[string]*NodeConfig, error) {
+	// A map with the ShortName as the key
 	res := make(map[string]*NodeConfig)
 
-	if len(TemplatePaths) == 0 {
-		return nil, fmt.Errorf("please specify one of more paths with --template-path")
+	if len(TemplatePaths) == 0 { // default is the install path
+		TemplatePaths = []string{"@"}
 	}
 
 	if len(TemplateNames) == 0 {
@@ -58,6 +63,7 @@ func RenderAll(nodes map[string]nodes.Node, links map[int]*types.Link) (map[stri
 		if len(TemplateNames) == 0 {
 			return nil, fmt.Errorf("no templates files were found by %s path", TemplatePaths)
 		}
+		log.Infof("No template names specified (-l) using: %s", strings.Join(TemplateNames, ", "))
 	}
 
 	tmpl := template.New("").Funcs(jT.Funcs)
@@ -72,7 +78,7 @@ func RenderAll(nodes map[string]nodes.Node, links map[int]*types.Link) (map[stri
 			tmplN := fmt.Sprintf("%s__%s.tmpl", baseN, vars["role"])
 
 			if tmpl.Lookup(tmplN) == nil {
-				err := LoadTemplates(tmpl, tmplN)
+				err := LoadTemplates(tmpl, fmt.Sprintf("%s", vars["role"]))
 				if err != nil {
 					return nil, err
 				}
@@ -84,10 +90,11 @@ func RenderAll(nodes map[string]nodes.Node, links map[int]*types.Link) (map[stri
 			var buf strings.Builder
 			err := tmpl.ExecuteTemplate(&buf, tmplN, vars)
 			if err != nil {
+				res[nodeName].Print(0, true)
 				return nil, err
 			}
 
-			data := strings.ReplaceAll(strings.Trim(buf.String(), "\n \t"), "\n\n\n", "\n\n")
+			data := strings.ReplaceAll(strings.Trim(buf.String(), "\n \t\r"), "\n\n\n", "\n\n")
 			res[nodeName].Data = append(res[nodeName].Data, data)
 			res[nodeName].Info = append(res[nodeName].Info, tmplN)
 		}
@@ -103,16 +110,18 @@ func (c *NodeConfig) String() string {
 }
 
 // Print the config
-func (c *NodeConfig) Print(printLines int) {
+func (c *NodeConfig) Print(printLines int, forceDebug ...bool) {
 	var s strings.Builder
 
 	s.WriteString(c.TargetNode.ShortName)
 
-	if log.IsLevelEnabled(log.DebugLevel) {
+	if log.IsLevelEnabled(log.DebugLevel) || len(forceDebug) > 0 {
 		s.WriteString(" vars = ")
 		vars, _ := json.MarshalIndent(c.Vars, "", "      ")
-		s.Write(vars[0 : len(vars)-1])
-		s.WriteString("  }")
+		if len(vars) > 0 {
+			s.Write(vars[0 : len(vars)-1])
+			s.WriteString("  }")
+		}
 	}
 
 	if printLines > 0 {

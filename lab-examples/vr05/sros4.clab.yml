@@ -4,7 +4,7 @@ topology:
   defaults:
     kind: vr-sros
     image: registry.srlinux.dev/pub/vr-sros:21.2.R1
-    license: license-sros21.txt
+    license: ~/license/license-sros21.txt
     labels:
       isis_iid: 0
   nodes:
